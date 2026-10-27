@@ -2,7 +2,7 @@
 
 [![Build](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![Jest Tests](https://img.shields.io/badge/Jest%20Tests-30%2F30%20Passed-brightgreen.svg)]()
-[![Playwright E2E](https://img.shields.io/badge/Playwright%20E2E-24%2F24%20Passed-brightgreen.svg)]()
+[![Playwright E2E](https://img.shields.io/badge/Playwright%20E2E-42%2F42%20Passed-brightgreen.svg)]()
 [![Security](https://img.shields.io/badge/Encryption-AES--256--GCM-gold.svg)]()
 [![License](https://img.shields.io/badge/License-ISC-lightgrey.svg)]()
 
@@ -12,6 +12,8 @@ Production-grade, highly available healthcare API designed for **100,000 daily c
 
 ## 📑 Table of Contents
 - [Architecture Overview](#-architecture-overview)
+- [📖 Detailed Architecture Specification (4 Pages)](docs/ARCHITECTURE.md)
+- [🛡️ Security Checklist & STRIDE Threat Model](docs/SECURITY_THREAT_MODEL.md)
 - [Key Features](#-key-features)
 - [Quick Start](#-quick-start)
   - [Option 1: Autonomous Test & Dev Server (Zero External Setup)](#option-1-autonomous-test--dev-server-zero-external-setup)
@@ -32,6 +34,7 @@ The system is engineered for high-throughput healthcare workflows:
 - **Distributed Caching & Rate Limiting:** Redis 7 with sliding-window algorithm and graceful offline fallback
 - **Asynchronous Task Queues:** Bull MQ for async appointment notifications, reminder scheduling, and webhook processing
 - **Observability Stack:** Prometheus metrics (`http_requests_total`, `http_request_duration_seconds` histograms), Pino structured JSON logging with distributed trace IDs (`X-Trace-Id`), and `/health` + `/ready` liveness/readiness probes
+- **Detailed Design Document:** Comprehensive 4-page system architecture covering booking sequence diagrams, ER schema, data partitioning, and disaster recovery is available at 👉 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**
 
 ```
 [ Client / Mobile Apps ]
@@ -125,7 +128,7 @@ The codebase includes comprehensive automated testing:
 # Run Jest Integration Test Suite (30/30 tests)
 npm test
 
-# Run Playwright End-to-End Test Suite (24/24 tests)
+# Run Playwright End-to-End & Responsive Suite (42/42 tests)
 npm run test:playwright
 
 # TypeScript Typecheck & Build
@@ -136,8 +139,8 @@ npm run build
 | Suite | Framework | Count | Coverage | Status |
 |-------|-----------|-------|----------|--------|
 | **Unit & Integration** | Jest + Supertest | **30 Tests** | Auth, RBAC, Consultations, Doctors, Payments, Idempotency, Metrics | ✅ PASS |
-| **End-to-End & UI** | Playwright Chromium | **24 Tests** | Observability, E2E Auth, Doctor Search, Idempotency Replay, Portal UI | ✅ PASS |
-| **Total Automated Tests** | | **54 Tests** | Full stack validation | **100% PASS** |
+| **End-to-End & Responsive** | Playwright Chromium | **42 Tests** | Probes, Auth E2E, Doctor Search, Idempotency Replay, Portal UI, Multi-Device Responsive (Pixel 9, iPhone SE, Tablet, Desktop) | ✅ PASS |
+| **Total Automated Tests** | | **72 Tests** | Full stack integration & cross-device validation | **100% PASS** |
 
 ---
 
@@ -170,6 +173,8 @@ telemedicine-backend/
 │   └── seed.js                 # Demo data seeder
 ├── tests/                      # Jest test suites & Playwright E2E specs
 ├── docs/
+│   ├── ARCHITECTURE.md         # 4-page system architecture, diagrams, scaling & DR
+│   ├── SECURITY_THREAT_MODEL.md # OWASP Top 10, STRIDE, AES-256-GCM, key rotation
 │   ├── openapi.json            # Complete OpenAPI 3.0 specification
 │   └── DEMO_VIDEO_SCRIPT.md    # Step-by-step video presentation guide
 └── docker-compose.yml          # Multi-container local orchestration
@@ -183,10 +188,11 @@ telemedicine-backend/
 - **Rate Limiting:** Sliding-window counter in Redis (100 req / 15 min default) with standard `X-RateLimit-*` headers.
 - **Audit Trails:** Immutable database logging of all security events (`USER_LOGIN`, `MFA_VERIFIED`, `PAYMENT_COMPLETED`, etc.) with IP and User-Agent capture.
 - **Zero Hardcoded Secrets:** Enforced via strict Zod environment validation on boot (`src/config/index.ts`).
+- **Comprehensive Threat Model:** Complete STRIDE analysis, OWASP Top 10 mitigation matrix, and 90-day key rotation procedures available at 👉 **[docs/SECURITY_THREAT_MODEL.md](docs/SECURITY_THREAT_MODEL.md)**
 
 ---
 
 ## 🎥 Demo Video Walkthrough Script
 
-A complete 5-7 minute walkthrough script with timestamps, screen actions, and word-for-word voiceover is available in:  
-👉 **[docs/DEMO_VIDEO_SCRIPT.md](file:///c:/Users/Bonth/Downloads/Amrutam%20Pharmaceuticals/telemedicine-backend/docs/DEMO_VIDEO_SCRIPT.md)**
+A complete 5-minute walkthrough script with timestamps, screen actions, and word-for-word voiceover is available in:  
+👉 **[docs/DEMO_VIDEO_SCRIPT.md](docs/DEMO_VIDEO_SCRIPT.md)**

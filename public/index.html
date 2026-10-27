@@ -1726,8 +1726,8 @@ POST /api/auth/mfa/login-verify body: { "mfaToken": "...", "token": "123456" }
     <div class="fc">
       <div class="fi2 ip">🧪</div>
       <div class="ft">Test Automation</div>
-      <div class="fd">30 Jest integration tests on EmbeddedPostgres + RedisMemoryServer. 24 Playwright tests covering portal and UI.</div>
-      <div class="tags"><span class="tag">Jest 30/30</span><span class="tag">Playwright 24/24</span></div>
+      <div class="fd">30 Jest integration tests on EmbeddedPostgres + RedisMemoryServer. 42 cross-device Playwright tests covering portal, API, and responsive UI.</div>
+      <div class="tags"><span class="tag">Jest 30/30</span><span class="tag">Playwright 42/42</span></div>
     </div>
   </div>
 
@@ -1751,9 +1751,13 @@ POST /api/auth/mfa/login-verify body: { "mfaToken": "...", "token": "123456" }
 │       ├── observability/ <span class="cm">← Prometheus metrics · Pino logging · tracing</span>
 │       ├── security/      <span class="cm">← AES-256-GCM encryption · bcrypt password</span>
 │       └── jobs/          <span class="cm">← Bull MQ background processing</span>
-├── tests/                 <span class="cm">← Jest integration (30) + Playwright E2E (24)</span>
+├── tests/                 <span class="cm">← Jest integration (30) + Playwright Cross-Device (42)</span>
 ├── prisma/                <span class="cm">← Schema definition &amp; SQL migrations</span>
-├── docs/                  <span class="cm">← OpenAPI 3.0 specs &amp; video walkthrough script</span>
+├── docs/
+│   ├── ARCHITECTURE.md    <span class="cm">← 4-page System Architecture, ERD &amp; Sagas</span>
+│   ├── SECURITY_THREAT_MODEL.md <span class="cm">← OWASP Top 10, STRIDE &amp; Key Rotation</span>
+│   ├── openapi.json       <span class="cm">← Complete OpenAPI 3.0 specification</span>
+│   └── DEMO_VIDEO_SCRIPT.md <span class="cm">← 5-min step-by-step presentation script</span>
 └── public/index.html      <span class="cm">← Responsive Dark/Light Developer Portal</span></pre>
     </div>
   </div>
