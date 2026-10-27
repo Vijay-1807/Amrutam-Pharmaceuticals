@@ -1,0 +1,390 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Amrutam Telemedicine System API",
+    "version": "1.0.0",
+    "description": "Production-grade backend API for Amrutam's Telemedicine System. Scaled for 100k daily consultations with sub-200ms p95 reads, sub-500ms writes, AES-256-GCM encryption, strict RBAC, TOTP MFA, distributed idempotency, and Prometheus observability.",
+    "contact": {
+      "name": "Amrutam Pharmaceuticals Engineering",
+      "url": "https://amrutam.co.in",
+      "email": "tech@amrutam.co.in"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    },
+    {
+      "url": "https://api.telemedicine.amrutam.co.in",
+      "description": "Production API Gateway"
+    }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "User lifecycle, JWT authentication, and TOTP MFA" },
+    { "name": "Doctors", "description": "Doctor directory, specialty search, and availability slots" },
+    { "name": "Consultations", "description": "Consultation booking with idempotency, clinical notes, and lifecycle management" },
+    { "name": "Prescriptions", "description": "Ayurvedic prescription generation, dosage, and patient instructions" },
+    { "name": "Payments", "description": "Consultation payment gateway integration, transaction verification, and refunds" },
+    { "name": "Admin", "description": "System analytics, user management, and compliance audit trail inspection" },
+    { "name": "Observability", "description": "System health probes, DB readiness, and Prometheus metrics" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Observability"],
+        "summary": "Liveness probe",
+        "description": "Returns 200 OK if service process is running.",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "service": { "type": "string", "example": "telemedicine-backend" },
+                    "timestamp": { "type": "string", "example": "2026-10-26T12:00:00.000Z" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "tags": ["Observability"],
+        "summary": "Readiness probe",
+        "description": "Validates database connectivity and Redis operational status.",
+        "responses": {
+          "200": { "description": "All dependencies ready" },
+          "503": { "description": "Database or critical dependency down" }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": ["Observability"],
+        "summary": "Prometheus metrics scrape target",
+        "description": "Exposes standard Prometheus metrics including http_requests_total and http_request_duration_seconds.",
+        "responses": {
+          "200": {
+            "description": "Prometheus text format exposition",
+            "content": { "text/plain": {} }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Register a new user (Patient or Doctor)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password", "firstName", "lastName"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "patient@example.com" },
+                  "password": { "type": "string", "format": "password", "minLength": 8, "example": "Sup3rSecret!pass" },
+                  "firstName": { "type": "string", "example": "Aarav" },
+                  "lastName": { "type": "string", "example": "Mehta" },
+                  "phone": { "type": "string", "example": "+919876543210" },
+                  "role": { "type": "string", "enum": ["PATIENT", "DOCTOR"], "default": "PATIENT" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User created and authenticated with JWT tokens" },
+          "400": { "description": "Validation error" },
+          "409": { "description": "Email already registered" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login with email and password",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email", "example": "patient@example.com" },
+                  "password": { "type": "string", "format": "password", "example": "Sup3rSecret!pass" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful or MFA challenge issued" },
+          "401": { "description": "Invalid email or password" }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Rotate refresh token and obtain new access token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["refreshToken"],
+                "properties": {
+                  "refreshToken": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Token rotated successfully" },
+          "401": { "description": "Invalid, expired, or reused refresh token" }
+        }
+      }
+    },
+    "/api/doctors": {
+      "get": {
+        "tags": ["Doctors"],
+        "summary": "Search & filter Ayurvedic doctors",
+        "parameters": [
+          { "name": "specialty", "in": "query", "schema": { "type": "string" }, "description": "Filter by specialty" },
+          { "name": "search", "in": "query", "schema": { "type": "string" }, "description": "Search doctor name, specialty, bio" },
+          { "name": "minRating", "in": "query", "schema": { "type": "number", "minimum": 0, "maximum": 5 } },
+          { "name": "maxFee", "in": "query", "schema": { "type": "number" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } }
+        ],
+        "responses": {
+          "200": { "description": "Paginated list of doctors" }
+        }
+      }
+    },
+    "/api/doctors/{id}/slots": {
+      "get": {
+        "tags": ["Doctors"],
+        "summary": "Get doctor availability slots",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "responses": {
+          "200": { "description": "List of available time slots" }
+        }
+      },
+      "post": {
+        "tags": ["Doctors"],
+        "summary": "Publish new availability slot (Doctor only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["startTime", "endTime"],
+                "properties": {
+                  "startTime": { "type": "string", "format": "date-time" },
+                  "endTime": { "type": "string", "format": "date-time" },
+                  "consultationType": { "type": "string", "enum": ["VIDEO", "PHONE", "CHAT", "IN_PERSON"], "default": "VIDEO" },
+                  "price": { "type": "number" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Slot created" }
+        }
+      }
+    },
+    "/api/consultations": {
+      "get": {
+        "tags": ["Consultations"],
+        "summary": "Get user consultations",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Consultation records" }
+        }
+      },
+      "post": {
+        "tags": ["Consultations"],
+        "summary": "Book a consultation with idempotency protection",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Unique UUID or transaction key preventing double-booking upon retry"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["doctorId"],
+                "properties": {
+                  "doctorId": { "type": "string", "format": "uuid" },
+                  "slotId": { "type": "string", "format": "uuid" },
+                  "type": { "type": "string", "enum": ["VIDEO", "PHONE", "CHAT", "IN_PERSON"], "default": "VIDEO" },
+                  "symptoms": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Consultation successfully booked" },
+          "409": { "description": "Slot already booked or race condition" }
+        }
+      }
+    },
+    "/api/consultations/{id}/status": {
+      "patch": {
+        "tags": ["Consultations"],
+        "summary": "Update consultation status & clinical notes",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": { "type": "string", "enum": ["SCHEDULED", "IN_PROGRESS", "COMPLETED", "CANCELLED", "NO_SHOW"] },
+                  "diagnosis": { "type": "string" },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Status updated" }
+        }
+      }
+    },
+    "/api/prescriptions": {
+      "post": {
+        "tags": ["Prescriptions"],
+        "summary": "Create Ayurvedic prescription for consultation",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["consultationId", "medication", "dosage", "frequency", "duration"],
+                "properties": {
+                  "consultationId": { "type": "string", "format": "uuid" },
+                  "medication": { "type": "string", "example": "Amrutam Brainkey Gold Malt" },
+                  "dosage": { "type": "string", "example": "10g (1 tablespoon)" },
+                  "frequency": { "type": "string", "example": "Twice daily with lukewarm milk" },
+                  "duration": { "type": "string", "example": "30 days" },
+                  "instructions": { "type": "string", "example": "Consume after breakfast and at bedtime" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Prescription issued" }
+        }
+      }
+    },
+    "/api/payments": {
+      "post": {
+        "tags": ["Payments"],
+        "summary": "Initiate consultation payment",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "Idempotency-Key", "in": "header", "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["consultationId", "amount"],
+                "properties": {
+                  "consultationId": { "type": "string", "format": "uuid" },
+                  "amount": { "type": "number", "example": 750 },
+                  "currency": { "type": "string", "default": "INR" },
+                  "paymentGateway": { "type": "string", "default": "Razorpay" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Payment record initialized" }
+        }
+      }
+    },
+    "/api/admin/analytics": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Get system KPI analytics (100k scale simulation)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "period", "in": "query", "schema": { "type": "string", "enum": ["day", "week", "month"], "default": "month" } }
+        ],
+        "responses": {
+          "200": { "description": "Aggregated analytics including consultation breakdown and gross revenue" },
+          "403": { "description": "Forbidden - requires ADMIN role" }
+        }
+      }
+    },
+    "/api/admin/audit-logs": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Query compliance and security audit logs",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "action", "in": "query", "schema": { "type": "string" } },
+          { "name": "userId", "in": "query", "schema": { "type": "string", "format": "uuid" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": { "description": "Immutable audit trail events" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

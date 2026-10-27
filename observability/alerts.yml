@@ -1,0 +1,37 @@
+groups:
+  - name: telemedicine-slo
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "5xx error rate above 1% for 5 minutes"
+
+      - alert: HighP95Latency
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route)) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 latency above 500ms on {{ $labels.route }}"
+
+      - alert: ServiceDown
+        expr: up{job="telemedicine-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Telemedicine backend is down"
+
+      - alert: ElevatedBookingErrors
+        expr: sum(rate(errors_total[10m])) by (type) > 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Elevated error rate for {{ $labels.type }}"
