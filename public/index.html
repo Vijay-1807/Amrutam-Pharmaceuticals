@@ -90,6 +90,9 @@
   html {
     scroll-behavior: smooth;
     font-size: 14px;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
   }
 
   body {
@@ -99,6 +102,8 @@
     line-height: 1.6;
     min-height: 100vh;
     overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
     transition: background-color 0.25s ease, color 0.25s ease;
   }
 
@@ -288,6 +293,9 @@
     display: flex;
     margin-top: 62px;
     min-height: calc(100vh - 62px);
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   .sb {
@@ -354,6 +362,8 @@
     min-width: 0;
     padding: 36px;
     max-width: 1100px;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   /* ════════════════════════════════════════════════════════════
@@ -361,15 +371,20 @@
      ════════════════════════════════════════════════════════════ */
   .hero {
     position: relative;
+    overflow: hidden;
     padding: 30px 0 24px;
     margin-bottom: 28px;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .hero::before {
     content: "";
     position: absolute;
-    top: -40px; right: -80px;
-    width: 440px; height: 440px;
+    top: -40px; right: 0;
+    width: 380px; height: 380px;
+    max-width: 100%;
     background: radial-gradient(circle, var(--brand-gold-glow) 0%, transparent 70%);
     pointer-events: none;
   }
@@ -606,6 +621,8 @@
     border-radius: 10px;
     overflow: hidden;
     margin-bottom: 14px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .ch {
@@ -653,8 +670,12 @@
     font-size: 12px;
     line-height: 1.6;
     overflow-x: auto;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     color: #e2e8f0;
     -webkit-overflow-scrolling: touch;
+    word-break: normal;
   }
 
   [data-theme="light"] pre {
@@ -979,7 +1000,7 @@
     box-shadow: var(--status-dot-glow);
   }
 
-  .page { display: none; }
+  .page { display: none; width: 100%; max-width: 100%; overflow-x: hidden; }
   .page.active { display: block; animation: fadeUp 0.35s ease both; }
 
   @keyframes fadeUp {
@@ -999,52 +1020,86 @@
     .main {
       padding: 24px 20px 96px 20px;
       max-width: 100%;
+      width: 100%;
+      overflow-x: hidden;
     }
     .mobile-nav { display: flex; }
     .nav-links { display: none; }
+    .toast {
+      bottom: 76px;
+      right: 16px;
+      left: 16px;
+      justify-content: center;
+      max-width: calc(100vw - 32px);
+    }
   }
 
   @media (max-width: 680px) {
     .nav {
-      padding: 0 14px;
-      height: 58px;
+      padding: 0 12px;
+      height: 56px;
     }
     .layout {
-      margin-top: 58px;
+      margin-top: 56px;
     }
     .brand {
-      font-size: 14px;
-      gap: 8px;
+      font-size: 13.5px;
+      gap: 6px;
+    }
+    .logo-icon {
+      width: 30px;
+      height: 30px;
+      font-size: 16px;
+      border-radius: 8px;
     }
     .brand-full-name { display: none; }
     .brand-short-name { display: inline !important; }
+    .nav-r {
+      gap: 6px;
+    }
+    .nav-r .nav-openapi-link {
+      display: none !important;
+    }
     .nav-r .btn {
-      padding: 6px 10px;
+      padding: 6px 9px;
       font-size: 11px;
     }
+    .theme-toggle-btn {
+      width: 32px;
+      height: 32px;
+      font-size: 15px;
+    }
     .main {
-      padding: 18px 14px 96px 14px;
+      padding: 16px 12px 96px 12px;
+    }
+    .hero {
+      padding: 16px 0 20px;
+      margin-bottom: 20px;
     }
     h1 {
-      font-size: clamp(22px, 6.5vw, 28px);
-      line-height: 1.2;
+      font-size: clamp(20px, 6vw, 26px);
+      line-height: 1.25;
+      word-break: break-word;
     }
     .hero p {
-      font-size: 13.5px;
-      margin-bottom: 18px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 16px;
     }
     .ha {
       flex-direction: column;
       gap: 8px;
+      width: 100%;
     }
     .ha .btn {
       width: 100%;
-      min-height: 42px;
+      min-height: 44px;
       font-size: 13px;
     }
     .stats {
       grid-template-columns: repeat(2, 1fr);
       gap: 8px;
+      margin-bottom: 24px;
     }
     .scard {
       padding: 12px 14px;
@@ -1062,15 +1117,34 @@
       flex-direction: column !important;
     }
     .nd {
-      min-width: 90px;
+      min-width: 80px;
       padding: 8px 10px;
       font-size: 11px;
     }
-    .arr { font-size: 12px; }
+    .arr { font-size: 11px; }
+    .al { font-size: 10.5px; }
     .ftr {
       flex-direction: column;
       align-items: flex-start;
       gap: 6px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .nr {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+    .arr {
+      display: flex;
+      justify-content: center;
+      transform: rotate(90deg);
+      padding: 2px 0;
+    }
+    .nd {
+      width: 100%;
+      min-width: 0;
     }
   }
 
@@ -1107,7 +1181,7 @@
   <div class="nav-r">
     <button class="theme-toggle-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle Dark/Light Theme" aria-label="Toggle Theme">🌙</button>
     <button class="btn bg" onclick="probeH()" id="nav-health-btn"><span class="ldot" id="ldot"></span>&nbsp;Health</button>
-    <a class="btn bgo" href="/api/openapi.json" target="_blank" rel="noopener">OpenAPI ↗</a>
+    <a class="btn bgo nav-openapi-link" href="/api/openapi.json" target="_blank" rel="noopener">OpenAPI ↗</a>
   </div>
 </nav>
 

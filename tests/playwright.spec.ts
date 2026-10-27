@@ -346,17 +346,211 @@ test.describe('Developer Portal UI', () => {
     // Should show status 201
     expect(result).toContain('201');
   });
+
+  test('Dark/Light theme toggle switches theme attribute', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const themeBefore = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    await page.locator('#theme-btn').click();
+    const themeAfter = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    expect(themeAfter).not.toBe(themeBefore);
+    expect(['dark', 'light']).toContain(themeAfter);
+  });
 });
 
 // ────────────────────────────────────────────────────────────
-// 6. Rate Limiting — sanity check header presence
+// 6. Responsive UI — Mobile (Pixel 9 Pro 427×952)
+// ────────────────────────────────────────────────────────────
+test.describe('Responsive UI — Mobile (Pixel 9 Pro)', () => {
+  test.use({ viewport: { width: 427, height: 952 } });
+
+  test('Sidebar is hidden on mobile viewport', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    await expect(page.locator('.sb')).toBeHidden();
+  });
+
+  test('Mobile bottom nav dock is visible', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    await expect(page.locator('.mobile-nav')).toBeVisible();
+    await expect(page.locator('#m-ov')).toBeVisible();
+    await expect(page.locator('#m-ex')).toBeVisible();
+    await expect(page.locator('#m-ar')).toBeVisible();
+    await expect(page.locator('#m-qs')).toBeVisible();
+  });
+
+  test('No horizontal overflow on mobile', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const overflows = await page.evaluate(() => ({
+      bodyScrollWidth: document.body.scrollWidth,
+      docWidth: document.documentElement.clientWidth,
+      overflows: document.body.scrollWidth > document.documentElement.clientWidth + 2,
+    }));
+    expect(overflows.overflows).toBe(false);
+  });
+
+  test('Stats grid shows 2 columns on mobile', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const statCards = page.locator('.stats .scard');
+    expect(await statCards.count()).toBeGreaterThanOrEqual(4);
+    const first = await statCards.nth(0).boundingBox();
+    const second = await statCards.nth(1).boundingBox();
+    const third = await statCards.nth(2).boundingBox();
+    // Cards 0 & 1 on same row
+    expect(Math.abs((first?.y ?? 0) - (second?.y ?? 0))).toBeLessThan(5);
+    // Card 2 on next row
+    expect((third?.y ?? 0)).toBeGreaterThan((first?.y ?? 0) + 20);
+  });
+
+  test('Hero CTA buttons are full-width on mobile', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const container = page.locator('.ha');
+    const containerBox = await container.boundingBox();
+    const firstBtn = container.locator('.btn').first();
+    const btnBox = await firstBtn.boundingBox();
+    const widthRatio = (btnBox?.width ?? 0) / (containerBox?.width ?? 1);
+    expect(widthRatio).toBeGreaterThan(0.85);
+  });
+
+  test('Mobile dock navigates between pages', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    await page.locator('#m-ex').click();
+    await expect(page.locator('#page-explorer')).toBeVisible();
+    await page.locator('#m-ar').click();
+    await expect(page.locator('#page-architecture')).toBeVisible();
+    await page.locator('#m-qs').click();
+    await expect(page.locator('#page-quickstart')).toBeVisible();
+    await page.locator('#m-ov').click();
+    await expect(page.locator('#page-overview')).toBeVisible();
+  });
+
+  test('Theme toggle works on mobile', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const before = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    await page.locator('#theme-btn').click();
+    const after = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
+    expect(after).not.toBe(before);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 7. Responsive UI — Desktop (1440×900)
+// ────────────────────────────────────────────────────────────
+test.describe('Responsive UI — Desktop (1440x900)', () => {
+  test.use({ viewport: { width: 1440, height: 900 } });
+
+  test('Desktop sidebar is visible', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    await expect(page.locator('.sb')).toBeVisible();
+  });
+
+  test('Mobile dock is hidden on desktop', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    await expect(page.locator('.mobile-nav')).toBeHidden();
+  });
+
+  test('Desktop nav links are visible', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    await expect(page.locator('.nav-links')).toBeVisible();
+    await expect(page.locator('#n-ov')).toBeVisible();
+    await expect(page.locator('#n-ex')).toBeVisible();
+  });
+
+  test('Stats grid has 3+ columns on desktop', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const statCards = page.locator('.stats .scard');
+    const first = await statCards.nth(0).boundingBox();
+    const third = await statCards.nth(2).boundingBox();
+    // On desktop, first 3 cards should be on the same row
+    expect(Math.abs((first?.y ?? 0) - (third?.y ?? 0))).toBeLessThan(5);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 8. Responsive UI — iPhone SE (375×667)
+// ────────────────────────────────────────────────────────────
+test.describe('Responsive UI — iPhone SE (375x667)', () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test('Zero horizontal overflow on iPhone SE', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const overflows = await page.evaluate(() => ({
+      scrollW: document.body.scrollWidth,
+      clientW: document.documentElement.clientWidth,
+      bad: document.body.scrollWidth > document.documentElement.clientWidth + 1,
+    }));
+    expect(overflows.bad).toBe(false);
+  });
+
+  test('Navbar actions fit without wrapping on 375px screen', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const themeBtn = page.locator('#theme-btn');
+    const healthBtn = page.locator('#nav-health-btn');
+    await expect(themeBtn).toBeVisible();
+    await expect(healthBtn).toBeVisible();
+    const themeBox = await themeBtn.boundingBox();
+    const healthBox = await healthBtn.boundingBox();
+    // Both buttons should be in navbar on same horizontal line
+    expect(Math.abs((themeBox?.y ?? 0) - (healthBox?.y ?? 0))).toBeLessThan(6);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 9. Responsive UI — Small Android (360×740)
+// ────────────────────────────────────────────────────────────
+test.describe('Responsive UI — Small Android (360x740)', () => {
+  test.use({ viewport: { width: 360, height: 740 } });
+
+  test('Zero horizontal overflow on narrow 360px viewport', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const overflows = await page.evaluate(() => ({
+      scrollW: document.body.scrollWidth,
+      clientW: document.documentElement.clientWidth,
+      bad: document.body.scrollWidth > document.documentElement.clientWidth + 1,
+    }));
+    expect(overflows.bad).toBe(false);
+  });
+
+  test('Mobile dock items are visible and interactable on 360px', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    await expect(page.locator('#m-ov')).toBeVisible();
+    await expect(page.locator('#m-ex')).toBeVisible();
+    await expect(page.locator('#m-ar')).toBeVisible();
+    await expect(page.locator('#m-qs')).toBeVisible();
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 10. Responsive UI — Tablet Portrait (768×1024)
+// ────────────────────────────────────────────────────────────
+test.describe('Responsive UI — Tablet (768x1024)', () => {
+  test.use({ viewport: { width: 768, height: 1024 } });
+
+  test('Stats grid shows 3 columns on tablet', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const statCards = page.locator('.stats .scard');
+    const first = await statCards.nth(0).boundingBox();
+    const second = await statCards.nth(1).boundingBox();
+    const third = await statCards.nth(2).boundingBox();
+    // Cards 0, 1, 2 on same row on tablet (max-width: 1024px gives repeat(3, 1fr))
+    expect(Math.abs((first?.y ?? 0) - (second?.y ?? 0))).toBeLessThan(5);
+    expect(Math.abs((first?.y ?? 0) - (third?.y ?? 0))).toBeLessThan(5);
+  });
+
+  test('Zero horizontal overflow on tablet', async ({ page }) => {
+    await page.goto(`${BASE}/`);
+    const overflows = await page.evaluate(() => ({
+      bad: document.body.scrollWidth > document.documentElement.clientWidth + 1,
+    }));
+    expect(overflows.bad).toBe(false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// 8. Rate Limiting — sanity check header presence
 // ────────────────────────────────────────────────────────────
 test.describe('Rate Limiter', () => {
   test('Responses include X-RateLimit headers for API routes', async ({ request }) => {
     const res = await request.get(`${BASE}/api/doctors`);
-    // Rate-limit headers should be present (even before limit hit)
     const headers = res.headers();
-    // At minimum the request should succeed without errors
     expect(res.status()).toBeLessThan(500);
   });
 });
