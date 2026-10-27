@@ -100,8 +100,14 @@ async function startServer() {
   }
 
   // 6. Start server
-  require('ts-node/register');
-  require('../src/server.ts');
+  const distServer = path.join(__dirname, '../dist/server.js');
+  const fs = require('fs');
+  if (fs.existsSync(distServer)) {
+    require(distServer);
+  } else {
+    require('ts-node/register');
+    require('../src/server.ts');
+  }
   console.log('🌿 Telemedicine server is live at http://localhost:3000');
 
   const cleanup = async () => {
